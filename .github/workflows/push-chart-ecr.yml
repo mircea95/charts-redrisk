@@ -1,0 +1,97 @@
+name: Package and Push Helm Chart to ECR
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+  workflow_dispatch:
+    inputs:
+      chart_version:
+        description: 'Chart version to publish (e.g. 0.1.0)'
+        required: true
+        type: string
+      app_version:
+        description: 'RED App version (e.g. v1.0.0)'
+        required: false
+        default: 'v1.0.0'
+        type: string
+
+env:
+  AWS_REGION: eu-central-1
+  ECR_REPOSITORY: red-charts
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  push-chart:
+    name: Package and Push Helm Chart
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: v3.14.0
+
+      - name: Set chart version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            echo "CHART_VERSION=${{ github.event.inputs.chart_version }}" >> $GITHUB_OUTPUT
+            echo "APP_VERSION=${{ github.event.inputs.app_version }}" >> $GITHUB_OUTPUT
+          else
+            # Strip 'v' prefix from tag for chart version
+            TAG="${{ github.ref_name }}"
+            echo "CHART_VERSION=${TAG#v}" >> $GITHUB_OUTPUT
+            echo "APP_VERSION=${TAG}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Update Chart.yaml version
+        run: |
+          sed -i "s/^version:.*/version: ${{ steps.version.outputs.CHART_VERSION }}/" red-app/Chart.yaml
+          sed -i "s/^appVersion:.*/appVersion: \"${{ steps.version.outputs.APP_VERSION }}\"/" red-app/Chart.yaml
+          cat red-app/Chart.yaml
+
+      - name: Update default image tag in values.yaml
+        run: |
+          sed -i "s/^  tag:.*/  tag: \"${{ steps.version.outputs.APP_VERSION }}\"/" red-app/values.yaml
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Package Helm chart
+        run: |
+          helm dependency build red-app/
+          helm package red-app/
+
+      - name: Push chart to ECR
+        run: |
+          REGISTRY="${{ steps.login-ecr.outputs.registry }}"
+          helm push red-app-${{ steps.version.outputs.CHART_VERSION }}.tgz oci://${REGISTRY}/red-charts
+
+      - name: Output chart details
+        run: |
+          echo "### Helm chart pushed successfully! :rocket:" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Chart:** red-app" >> $GITHUB_STEP_SUMMARY
+          echo "**Version:** ${{ steps.version.outputs.CHART_VERSION }}" >> $GITHUB_STEP_SUMMARY
+          echo "**App Version:** ${{ steps.version.outputs.APP_VERSION }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Registry:** ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Install command:**" >> $GITHUB_STEP_SUMMARY
+          echo '```bash' >> $GITHUB_STEP_SUMMARY
+          echo "helm install red-app oci://${{ steps.login-ecr.outputs.registry }}/red-charts/red-app --version ${{ steps.version.outputs.CHART_VERSION }}" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY

@@ -1,0 +1,17 @@
+{{- if .Values.persistence.reports.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "red-app.fullname" . }}-reports
+  labels:
+    {{- include "red-app.labels" . | nindent 4 }}
+spec:
+  accessModes:
+    {{- toYaml .Values.persistence.reports.accessModes | nindent 4 }}
+  {{- if .Values.persistence.reports.storageClass }}
+  storageClassName: {{ .Values.persistence.reports.storageClass | quote }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.persistence.reports.size }}
+{{- end }}
