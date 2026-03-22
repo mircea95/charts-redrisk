@@ -106,31 +106,23 @@ persistence:
     accessModes:
       - ReadWriteOnce
 
-# Bitnami PostgreSQL subchart
+# Bundled PostgreSQL (official image, no Bitnami dependency)
+# Set enabled: false to use an external database via env.DATABASE_URL
 postgresql:
   enabled: true
+  image: postgres:17-alpine
   auth:
     database: red_production
     username: red_user
     password: ""
-    postgresPassword: ""
-  primary:
-    persistence:
-      enabled: true
-      size: 10Gi
-    resources:
-      requests:
-        cpu: 250m
-        memory: 256Mi
-      limits:
-        cpu: "1"
-        memory: 1Gi
-    configuration: |
-      max_connections = 200
-      shared_buffers = 256MB
-      effective_cache_size = 1GB
-      work_mem = 16MB
-      maintenance_work_mem = 128MB
-      checkpoint_completion_target = 0.9
-      wal_buffers = 16MB
-      default_statistics_target = 100
+  persistence:
+    enabled: true
+    size: 10Gi
+    storageClass: ""
+  resources:
+    requests:
+      cpu: 250m
+      memory: 256Mi
+    limits:
+      cpu: "1"
+      memory: 1Gi

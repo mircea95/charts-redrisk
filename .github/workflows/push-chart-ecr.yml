@@ -1,4 +1,4 @@
-name: Package and Push Helm Chart to ECR
+name: Package and Push Helm Chart to ECR Public
 
 on:
   push:
@@ -18,8 +18,7 @@ on:
         type: string
 
 env:
-  AWS_REGION: eu-central-1
-  ECR_REPOSITORY: red-charts
+  AWS_REGION: us-east-1
 
 permissions:
   id-token: write
@@ -68,19 +67,19 @@ jobs:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Login to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v2
+      - name: Login to Amazon ECR Public
+        run: |
+          aws ecr-public get-login-password --region us-east-1 | \
+            helm registry login --username AWS --password-stdin public.ecr.aws
 
       - name: Package Helm chart
         run: |
           helm dependency build red-app/
           helm package red-app/
 
-      - name: Push chart to ECR
+      - name: Push chart to ECR Public
         run: |
-          REGISTRY="${{ steps.login-ecr.outputs.registry }}"
-          helm push red-app-${{ steps.version.outputs.CHART_VERSION }}.tgz oci://${REGISTRY}/red-charts
+          helm push red-app-${{ steps.version.outputs.CHART_VERSION }}.tgz oci://public.ecr.aws/t3v3f1b2
 
       - name: Output chart details
         run: |
@@ -89,9 +88,9 @@ jobs:
           echo "**Chart:** red-app" >> $GITHUB_STEP_SUMMARY
           echo "**Version:** ${{ steps.version.outputs.CHART_VERSION }}" >> $GITHUB_STEP_SUMMARY
           echo "**App Version:** ${{ steps.version.outputs.APP_VERSION }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Registry:** ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Registry:** public.ecr.aws/t3v3f1b2/red-app" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Install command:**" >> $GITHUB_STEP_SUMMARY
           echo '```bash' >> $GITHUB_STEP_SUMMARY
-          echo "helm install red-app oci://${{ steps.login-ecr.outputs.registry }}/red-charts/red-app --version ${{ steps.version.outputs.CHART_VERSION }}" >> $GITHUB_STEP_SUMMARY
+          echo "helm install red-app oci://public.ecr.aws/t3v3f1b2/red-app --version ${{ steps.version.outputs.CHART_VERSION }}" >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY

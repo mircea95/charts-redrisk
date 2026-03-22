@@ -66,6 +66,6 @@ Generate the DATABASE_URL when using the bundled PostgreSQL subchart.
 {{- if .Values.env.DATABASE_URL }}
 {{- .Values.env.DATABASE_URL }}
 {{- else if .Values.postgresql.enabled }}
-{{- printf "postgresql://%s:%s@%s-postgresql:5432/%s" .Values.postgresql.auth.username .Values.postgresql.auth.password (include "red-app.fullname" .) .Values.postgresql.auth.database }}
+{{- printf "postgresql://%s:%s@%s-postgresql:5432/%s" .Values.postgresql.auth.username (.Values.postgresql.auth.password) (include "red-app.fullname" .) .Values.postgresql.auth.database }}
 {{- end }}
 {{- end }}

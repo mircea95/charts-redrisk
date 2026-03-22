@@ -25,6 +25,12 @@ spec:
         runAsUser: 1001
         runAsGroup: 1001
         fsGroup: 1001
+      {{- if .Values.postgresql.enabled }}
+      initContainers:
+        - name: wait-for-db
+          image: {{ .Values.postgresql.image | quote }}
+          command: ['sh', '-c', 'until pg_isready -h {{ include "red-app.fullname" . }}-postgresql -p 5432 -U {{ .Values.postgresql.auth.username }}; do echo "Waiting for PostgreSQL..."; sleep 2; done']
+      {{- end }}
       containers:
         - name: {{ .Chart.Name }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"

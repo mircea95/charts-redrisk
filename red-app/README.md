@@ -6,19 +6,13 @@ Helm chart for deploying the RED Risk Management Platform on Kubernetes.
 
 - Kubernetes 1.24+
 - Helm 3.x
-- AWS CLI (for ECR authentication)
 - A valid RED license key
 
 ## Quick Start
 
 ```bash
-# Authenticate with the chart registry
-REGISTRY="903938976360.dkr.ecr.eu-central-1.amazonaws.com"
-aws ecr get-login-password --region eu-central-1 | \
-  helm registry login --username AWS --password-stdin ${REGISTRY}
-
-# Install from OCI registry
-helm install red-app oci://${REGISTRY}/red-charts/red-app \
+# Install from public OCI registry (no authentication required)
+helm install red-app oci://public.ecr.aws/t3v3f1b2/red-app \
   --version 0.1.0 \
   -f values.yaml \
   -n red-system \
@@ -186,9 +180,7 @@ For all PostgreSQL options, see the [Bitnami PostgreSQL chart documentation](htt
 ## Upgrading
 
 ```bash
-REGISTRY="903938976360.dkr.ecr.eu-central-1.amazonaws.com"
-
-helm upgrade red-app oci://${REGISTRY}/red-charts/red-app \
+helm upgrade red-app oci://public.ecr.aws/t3v3f1b2/red-app \
   --version 0.2.0 \
   -f values.yaml \
   -n red-system
