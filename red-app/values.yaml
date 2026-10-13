@@ -97,11 +97,22 @@ readinessProbe:
   timeoutSeconds: 5
   failureThreshold: 3
 
-# Persistent volume for generated reports (scheduled Excel exports)
+# Persistent volumes
 persistence:
+  # Generated reports (scheduled Excel exports)
   reports:
     enabled: true
     size: 2Gi
+    storageClass: ""
+    accessModes:
+      - ReadWriteOnce
+  # Attachments of risks and treatment actions (local file storage, /app/uploads).
+  # Without it, attachments are lost whenever the pod is recreated. ReadWriteOnce fits one
+  # replica; with several replicas use a ReadWriteMany storage class or S3 / R2 storage
+  # (optionalEnv STORAGE_DRIVER=s3|r2) and disable this volume.
+  uploads:
+    enabled: true
+    size: 5Gi
     storageClass: ""
     accessModes:
       - ReadWriteOnce

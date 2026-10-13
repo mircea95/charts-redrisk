@@ -102,16 +102,29 @@ spec:
           resources:
             {{- toYaml . | nindent 12 }}
           {{- end }}
-          {{- if .Values.persistence.reports.enabled }}
+          {{- if or .Values.persistence.reports.enabled .Values.persistence.uploads.enabled }}
           volumeMounts:
+            {{- if .Values.persistence.reports.enabled }}
             - name: reports
               mountPath: /app/reports
+            {{- end }}
+            {{- if .Values.persistence.uploads.enabled }}
+            - name: uploads
+              mountPath: /app/uploads
+            {{- end }}
           {{- end }}
-      {{- if .Values.persistence.reports.enabled }}
+      {{- if or .Values.persistence.reports.enabled .Values.persistence.uploads.enabled }}
       volumes:
+        {{- if .Values.persistence.reports.enabled }}
         - name: reports
           persistentVolumeClaim:
             claimName: {{ include "red-app.fullname" . }}-reports
+        {{- end }}
+        {{- if .Values.persistence.uploads.enabled }}
+        - name: uploads
+          persistentVolumeClaim:
+            claimName: {{ include "red-app.fullname" . }}-uploads
+        {{- end }}
       {{- end }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
