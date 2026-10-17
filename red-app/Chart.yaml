@@ -3,7 +3,7 @@ name: red-app
 description: RED Risk Management Platform - On-Premise Helm Chart
 type: application
 version: 0.2.0
-appVersion: "v1.0.0"
+appVersion: "v1.5.0"
 home: https://redrisk.eu
 maintainers:
   - name: RED Team
